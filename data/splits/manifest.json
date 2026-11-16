@@ -1,0 +1,148 @@
+{
+  "counts": {
+    "dev": 50,
+    "test": 49,
+    "train": 200
+  },
+  "diagnostics": {
+    "dev": {
+      "outcomes": {
+        "A-win": 21,
+        "B-win": 19,
+        "draw": 10
+      },
+      "repeated_teams": {
+        "AC Milan": 2,
+        "AS Roma": 3,
+        "Arsenal": 6,
+        "Barcelona": 5,
+        "Bayern Munich": 6,
+        "Chelsea": 5,
+        "Dortmund": 2,
+        "Espanyol": 2,
+        "FC Augsburg": 2,
+        "Granada CF": 2,
+        "Juventus": 2,
+        "Leicester": 5,
+        "Liverpool": 6,
+        "Manchester City": 4,
+        "Paris SG": 2,
+        "Real Madrid": 6,
+        "Southampton": 2,
+        "Tottenham": 2,
+        "Villarreal": 2,
+        "Watford": 2
+      }
+    },
+    "test": {
+      "outcomes": {
+        "A-win": 20,
+        "B-win": 18,
+        "draw": 11
+      },
+      "repeated_teams": {
+        "AC Milan": 2,
+        "AS Roma": 2,
+        "Barcelona": 10,
+        "Bayern Munich": 3,
+        "Chelsea": 7,
+        "Dep. La Coruna": 2,
+        "Dortmund": 2,
+        "Granada CF": 3,
+        "Inter": 3,
+        "Liverpool": 5,
+        "Manchester City": 2,
+        "Manchester United": 4,
+        "Paris SG": 4,
+        "Real Madrid": 10,
+        "Southampton": 4,
+        "Stoke City": 2,
+        "Swansea": 2,
+        "Valencia": 2,
+        "Villarreal": 2,
+        "West Ham": 2
+      }
+    },
+    "train": {
+      "outcomes": {
+        "A-win": 93,
+        "B-win": 76,
+        "draw": 31
+      },
+      "repeated_teams": {
+        "AC Milan": 4,
+        "AS Roma": 8,
+        "Alaves": 3,
+        "Arsenal": 13,
+        "Aston Villa": 2,
+        "Ath Bilbao": 3,
+        "Atl. Madrid": 5,
+        "Barcelona": 34,
+        "Bayern Munich": 17,
+        "Benfica": 2,
+        "Betis": 5,
+        "Bologna": 2,
+        "Bordeaux": 2,
+        "Bournemouth": 2,
+        "Burnley": 3,
+        "CSKA Moscow": 2,
+        "Celta Vigo": 4,
+        "Chelsea": 26,
+        "Crystal Palace": 3,
+        "Dep. La Coruna": 4,
+        "Dortmund": 8,
+        "Eibar": 4,
+        "Espanyol": 3,
+        "Genoa": 3,
+        "Getafe": 3,
+        "Gijon": 3,
+        "Hertha Berlin": 3,
+        "Inter": 2,
+        "Juventus": 5,
+        "Las Palmas": 4,
+        "Leganes": 2,
+        "Leicester": 7,
+        "Liverpool": 19,
+        "Maccabi Tel Aviv": 2,
+        "Malaga": 7,
+        "Manchester City": 16,
+        "Manchester United": 8,
+        "Napoli": 8,
+        "Newcastle Utd": 2,
+        "Paris SG": 15,
+        "Real Madrid": 55,
+        "Real Sociedad": 4,
+        "Sevilla": 4,
+        "Shakhtar Donetsk": 2,
+        "Sunderland": 6,
+        "Swansea": 4,
+        "Tottenham": 3,
+        "Valencia": 4,
+        "VfB Stuttgart": 2,
+        "Villarreal": 3,
+        "Watford": 2,
+        "West Brom": 4,
+        "West Ham": 4
+      }
+    }
+  },
+  "eligible_count": 299,
+  "eligible_ids_sha256": "0f7259e684ce5d540c5adabceb151e4af0e4bc0c6d94c5435838a73c626db7f5",
+  "excluded_count": 41,
+  "exclusion_reasons": {
+    "commentary_team_mismatch": 7,
+    "goal_count_exceeds_score": 8,
+    "no_timed_events": 4,
+    "score_contradiction": 29,
+    "statistics_team_mismatch": 8
+  },
+  "id_sha256": "2d4fd347013667a5d4457cb7b31fd6179880806b4b113f6d61d25613ebfa953d",
+  "seed": 42,
+  "selection": "sort eligible records by match_id, Python random.Random(seed).shuffle, take first required, assign train/dev/test in order",
+  "source_sha256": "26c4dd8bbdde870d694e0da690d5bee642f37dff906782dcc41dcedfe98febf3",
+  "target": {
+    "dev": 50,
+    "test": 49,
+    "train": 200
+  }
+}

@@ -1,0 +1,9 @@
+# Implementation status — approved 299-match split
+
+Completed: verified the user ZIP against the repository Git blob SHA; inspected 340 real match folders; implemented a source-specific adapter for commentary, statistics, and final scores; normalized 340 source-grounded records; audited eligibility and exclusions; spot-checked six source records; created and verified the approved 200/50/49 split, deterministic prompts, Qwen GPU adapter, resumable generation, basic factual checker, CSV export, and Slurm recipes.
+
+Actual data result: 299 eligible and 41 excluded under the recorded criteria. The original 300/100/100 command failed with a shortage of 201. After user approval, `data/splits/manifest.json` and the 200/50/49 fold files were created. All 299 eligible IDs appear exactly once; there is no overlap. No model output or baseline metrics exist. Processed records and audit JSON are local and Git-ignored; split files are retained for reproducibility.
+
+Verification: `python3 -m unittest discover -s tests -v` passed all seven tests, including a synthetic 500-ID exact split, 499-ID rejection, source adapter deduplication, and mocked generation/resume. Python compilation, editable package installation, and Slurm shell syntax checks passed. These are engineering tests, not model results. The train-only two-match dry-run prompt preview passed. Qwen GPU/Insomnia account and allocation remain unverified.
+
+Qwen was pinned to commit `a09a35458c702b33eeacc393d103063234e8bc28` from the official model API. The user has account `edu` and sees GPU GRES on `short`, but no allocation has yet been tested. Pending: run a short GPU allocation and model smoke, then run baselines; broaden parser spot checks and factuality manual audit; then implement activation extraction, steering, and perspective evaluation.

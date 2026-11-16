@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soccer-perspective-summaries"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []
+[project.optional-dependencies]
+gpu = ["torch>=2.3,<3", "transformers>=4.45,<5", "accelerate>=1,<2", "safetensors>=0.4,<1"]
+test = ["pytest>=8,<10"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,3 @@
+# Midterm factual scaffold (student writes first draft)
+
+The original proposal asked about model choice, team/soccer affinity, contrastive steering, and generated-to-human classifier transfer. The graded proposal earned 100/100; TA feedback emphasized causal steering and event-relative good/bad news, while deprioritizing the large human study. The optional midterm template calls for 5–8 pages with introduction, related work, approach, experimental setup, actual baseline and extension results, error analysis, outstanding questions, and references. No results exist yet, so results tables must remain pending.
