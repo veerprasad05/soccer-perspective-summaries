@@ -272,12 +272,13 @@ def main():
     for row in read_jsonl(args.generations):
         if row["match_id"] not in ids or row.get("status") != "complete":
             raise ValueError("Generation file contains a non-split or incomplete row")
-        key = (row["match_id"], row["condition"])
+        evaluation_condition = row.get("evaluation_condition", row["condition"])
+        key = (row["match_id"], evaluation_condition)
         if key in seen:
             raise ValueError(f"Duplicate generation for {key}")
         seen.add(key)
         details.append({"run_id": row["run_id"], "match_id": row["match_id"],
-                        "condition": row["condition"],
+                        "condition": evaluation_condition,
                         "split_manifest_sha256": row.get("split_manifest_sha256"),
                         **evaluate(records[row["match_id"]], row["output_text"])})
     if not details:

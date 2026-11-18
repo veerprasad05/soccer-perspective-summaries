@@ -4,7 +4,22 @@
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=results/slurm-%j.out
-# Placeholder only: steering is not implemented. Do not submit.
 set -euo pipefail
-printf '%s\n' 'Steering pending learned vector implementation and validation' >&2
-exit 2
+: "${VECTORS:?Set VECTORS to trained .safetensors path}"
+: "${METADATA:?Set METADATA to its metadata JSON path}"
+: "${BASELINES:?Set BASELINES to concise neutral baseline JSONL}"
+: "${LAYER:?Set LAYER to a vector layer index}"
+: "${STRENGTHS:?Set STRENGTHS to comma-separated positive coefficients}"
+: "${OUTPUT:?Set OUTPUT to a new steering JSONL path}"
+CONFIG="${CONFIG:-configs/record_coverage.json}"
+SPLIT="${SPLIT:-dev}"
+RANDOM_SEEDS="${RANDOM_SEEDS:-17,29,43}"
+cd "$SLURM_SUBMIT_DIR"
+export HF_HOME="$SLURM_SUBMIT_DIR/.hf-cache"
+mkdir -p "$HF_HOME" results
+source .venv/bin/activate
+args=(--config "$CONFIG" --split "$SPLIT" --vectors "$VECTORS"
+      --metadata "$METADATA" --baselines "$BASELINES" --layer "$LAYER"
+      --strengths "$STRENGTHS" --random-seeds "$RANDOM_SEEDS" --output "$OUTPUT")
+if [[ -n "${SMOKE_TEST:-}" ]]; then args+=(--smoke-test "$SMOKE_TEST"); fi
+python3 -m src.steering "${args[@]}"

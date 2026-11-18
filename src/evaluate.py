@@ -70,7 +70,7 @@ def main():
     for g in read_jsonl(a.generations):
         if g.get("status")!="complete":continue
         if g["match_id"] not in records:raise ValueError(f"Unknown match {g['match_id']}")
-        details.append({"run_id":g["run_id"],"match_id":g["match_id"],"condition":g["condition"],**evaluate(records[g["match_id"]],g["output_text"])})
+        details.append({"run_id":g["run_id"],"match_id":g["match_id"],"condition":g.get("evaluation_condition",g["condition"]),**evaluate(records[g["match_id"]],g["output_text"])})
     atomic_jsonl(a.details,details); groups=collections.defaultdict(list)
     for d in details:groups[d["condition"]].append(d)
     Path(a.output).parent.mkdir(parents=True,exist_ok=True)

@@ -113,6 +113,23 @@ class SportsSumTests(unittest.TestCase):
                 main()
             self.assertFalse((root / "out.csv").exists())
 
+    def test_cli_separates_steering_arms_on_same_match(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "ids.json").write_text(json.dumps(["one"]))
+            (root / "matches.jsonl").write_text(json.dumps({"match_id": "one", **fixture()}) + "\n")
+            rows = [{"match_id": "one", "condition": "neutral", "evaluation_condition": arm,
+                     "status": "complete", "run_id": arm, "output_text": "Smith scored."}
+                    for arm in ("none_alpha_0", "learned_alpha_+1")]
+            (root / "generations.jsonl").write_text("\n".join(map(json.dumps, rows)) + "\n")
+            argv = ["sportssum", "--matches", str(root / "matches.jsonl"),
+                    "--generations", str(root / "generations.jsonl"),
+                    "--split-ids", str(root / "ids.json"),
+                    "--output", str(root / "out.csv"), "--details", str(root / "out.jsonl")]
+            with patch("sys.argv", argv):
+                main()
+            self.assertEqual(len((root / "out.jsonl").read_text().splitlines()), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

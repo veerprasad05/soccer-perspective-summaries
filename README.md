@@ -48,11 +48,15 @@ python3 -m src.audit_sheet --matches data/processed/matches.jsonl --generations 
 
 `--mock` exercises the output pipeline with an explicitly labeled fake text and must never be treated as research generation. Each real row records prompt, input hash, split manifest hash, settings, seed, model, revision, elapsed time, completion state, and error. Completed run IDs are skipped; errors are retried. The cluster smoke, training, and development runs completed. `src.sportssum` computes adapted SportsSum name and player-event set F1 against the structured BBC event records; see `notes/sportssum-evaluation.md` for definitions, measured results, and limitations. The separate `src.evaluate` command is a **limited regex checker** for explicit scores, winners, scorer names, and some goal minutes. It marks ambiguous or unrecorded claims `unverifiable`; its precision is only over the claims it recognizes. Neither method alone supports a comprehensive factuality estimate. Perspective remains `pending`. The audit-sheet command creates a condition-blinded 18-summary development review sheet and a separate answer key for later use.
 
-See `notes/hpc-setup.md` for cluster commands. `src/activations.py`, `src/steering.py`, and `src/probe.py` are future work markers, not completed studies.
+See `notes/hpc-setup.md` for cluster commands. `src/probe.py` remains future work.
 
 ## Record coverage prompt experiment
 
 The `experiment/record-coverage` branch adds two BBC-record-grounded prompt modes, `concise` and `complete`, with a 150-word target and `max_new_tokens=250`. The modes share the exact same factual input and are saved to different JSONL files. `complete` asks for every available rendered fact; this is a prompt objective, not an automatically verified outcome. The SportsSum-style evaluator now prints separate precision, recall, and F1, but its event/name parser does not measure all score, time, or statistic fields. See `notes/record-coverage-experiment.md` for the design, limits, preflight commands, and cluster settings. The saved 200/50/49 split remains unchanged; test generation waits until dev settings are frozen.
+
+## Concise activation and steering experiment
+
+The `experiment/concise-steering` branch implements train-only Qwen activation extraction from the record-grounded concise fan A/B summaries and neutral-prompt residual steering with no-hook and norm-matched random controls. CPU tests and validation of the existing two-match concise pilot pass; a GPU extraction/hook smoke run and the full 400-summary concise train-pair generation are still required. The 49-match test fold is blocked from the extraction and steering CLIs. See `notes/concise-steering.md` for exact methods, run order, Slurm commands, and current limits.
 
 ## Version control and transfer
 
