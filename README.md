@@ -56,7 +56,7 @@ The `experiment/record-coverage` branch adds two BBC-record-grounded prompt mode
 
 ## Concise activation and steering experiment
 
-The `experiment/concise-steering` branch implements train-only Qwen activation extraction from the record-grounded concise fan A/B summaries and neutral-prompt residual steering with no-hook and norm-matched random controls. CPU tests and validation of the existing two-match concise pilot pass; a GPU extraction/hook smoke run and the full 400-summary concise train-pair generation are still required. The 49-match test fold is blocked from the extraction and steering CLIs. See `notes/concise-steering.md` for exact methods, run order, Slurm commands, and current limits.
+The `experiment/concise-steering` branch implements train-only Qwen activation extraction from the record-grounded concise fan A/B summaries and neutral-prompt residual steering with no-hook and norm-matched random controls. The full 200-pair training extraction and 850-output development steering run have completed; no-hook generation matched all 50 saved neutral baselines. The 49-match test fold is blocked from the extraction and steering CLIs. See `notes/concise-steering.md` for the method and Slurm commands, and `notes/concise-steering-results.md` for development findings and limits. Team-perspective judgments remain pending.
 
 ## Version control and transfer
 
