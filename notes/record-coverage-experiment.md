@@ -1,5 +1,7 @@
 # Record-grounded summary coverage experiment
 
+The train-only pilots and both 50-match development runs have now completed. Actual results and observed coverage failures are in `notes/record-coverage-results.md`. The run plan below records the original settings; do not proceed to test with these settings before addressing the failed complete-coverage objective.
+
 This branch keeps the approved 200/50/49 match split and pinned Qwen revision. The 49-match test fold has not been generated. Run two prompt modes from the same rendered BBC match facts and audience instruction:
 
 | Mode | System-prompt objective | Output file rule |

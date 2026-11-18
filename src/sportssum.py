@@ -19,7 +19,7 @@ CAP = r"[A-ZÀ-ÖØ-Þ][\wÀ-ÿ'’-]*"
 PARTICLE = r"(?:de|del|da|dos|van|von|di|le|la)"
 PERSON = rf"{CAP}(?:\s+(?:{CAP}|{PARTICLE})){{0,3}}"
 GOAL_VERBS = r"scored|scoring|netted|equalized|equalised"
-METRIC_VERSION = "sportssum-bbc-v1"
+METRIC_VERSION = "sportssum-bbc-v2"
 
 
 def fold(value):
@@ -147,7 +147,7 @@ def extract_predictions(record, text, reference_names):
 
     # Explicit named event lists are common in short sports summaries.
     lists = (
-        (r"\b(?i:goals?)\s+(?i:came\s+)?(?i:from|by|through|via)\s+([^.!?;]{1,100})", "goal"),
+        (r"\b(?i:goals?)\s+(?i:came\s+)?(?i:from|by|through|via)\s+([^.!?;]{1,400})", "goal"),
         (r"\b(?i:yellow cards?)\s+(?i:for|to)\s+([^.!?;]{1,100})", "yellow_card"),
         (r"\b(?i:red cards?)\s+(?i:for|to)\s+([^.!?;]{1,100})", "red_card"),
     )
@@ -155,10 +155,15 @@ def extract_predictions(record, text, reference_names):
         for match in re.finditer(pattern, text):
             if kind == "goal" and re.search(r"\bown\s+$", text[max(0, match.start()-5):match.start()], re.I):
                 continue
+            # A scorer list often attaches minutes to each name: "Smith (29'),
+            # Jones (90+2')". Remove only these time annotations before
+            # applying the ordinary clause boundary; other parentheses still
+            # stop the list to avoid crediting unrelated player mentions.
+            listed = re.sub(r"\(\s*\d{1,3}(?:\+\d{1,2})?\s*['’]?\s*\)", " ", match.group(1))
             segment = re.split(
                 r"\(|,\s*(?:we|they|he|she|the|while|but|and an? red|and an? own)\b|"
                 r"\b(?:but|while|before|after|put|ensured|helped|gave|sealed|followed|were|was)\b",
-                match.group(1), maxsplit=1, flags=re.I,
+                listed, maxsplit=1, flags=re.I,
             )[0]
             for person in resolver.known_mentions(segment):
                 names.add(person)

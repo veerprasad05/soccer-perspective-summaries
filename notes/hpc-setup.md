@@ -83,6 +83,8 @@ Columbia's [job documentation](https://columbiauniversity.atlassian.net/wiki/spa
 
 ## 5. Record-coverage experiment branch
 
+Both train-only pilots and both development runs were completed for prompt versions `record-concise-v1` and `record-complete-v1`; see `notes/record-coverage-results.md`. The commands below reproduce those runs or resume incomplete rows. They are not instructions to rerun unchanged outputs. Do not submit a test run with the current complete prompt.
+
 After pushing `main` and `experiment/record-coverage` from the local machine, run the following from the Insomnia login node. Do not rerun the dataset split or regenerate the untouched test fold.
 
 ```bash

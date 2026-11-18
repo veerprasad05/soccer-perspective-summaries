@@ -86,6 +86,16 @@ class SportsSumTests(unittest.TestCase):
         self.assertNotIn(("cara doe", "yellow_card"), predicted)
         self.assertNotIn(("frank foo", "goal"), predicted)
 
+    def test_goal_list_with_per_player_minutes(self):
+        record = {"team_a": "North City", "team_b": "South United", "goal_events_complete": True,
+                  "events": [{"player": name, "type": "goal"}
+                             for name in ("Alice Smith", "Bob Jones", "Frank Foo", "Cara Doe",
+                                          "Dave Lee", "Erin Kay")]}
+        result = evaluate(record, "Goals came from Alice Smith (3'), Bob Jones (40'), "
+                          "Frank Foo (50'), Cara Doe (83'), Dave Lee (88'), and Erin Kay (90+2').")
+        self.assertEqual(result["event"]["tp"], 6)
+        self.assertEqual(result["event"]["fp"], 0)
+
     def test_cli_rejects_partial_condition_coverage(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
