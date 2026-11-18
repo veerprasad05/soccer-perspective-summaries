@@ -6,13 +6,15 @@ import time
 from pathlib import Path
 from .data.common import atomic_jsonl, canonical_json, read_jsonl, sha256_file
 from .prompting.render import input_hash
-from .prompting.templates import build_messages, CONDITIONS, VERSION
+from .prompting.templates import build_messages, CONDITIONS, COVERAGE_MODES, VERSIONS
 
 def digest(obj): return hashlib.sha256(canonical_json(obj).encode()).hexdigest()
 
-def run(config, split, conditions, output, generator=None, dry_run=False, smoke_test=None):
+def run(config, split, conditions, output, generator=None, dry_run=False,
+        smoke_test=None, coverage_mode="baseline"):
     if split not in ("train","dev","test"): raise ValueError("split must be train/dev/test")
     if any(c not in CONDITIONS for c in conditions): raise ValueError("conditions must be neutral,fan_A,fan_B")
+    if coverage_mode not in COVERAGE_MODES: raise ValueError(f"Invalid coverage mode {coverage_mode}")
     if smoke_test is not None and split != "train": raise ValueError("smoke-test is train-only")
     mock = isinstance(generator, MockGenerator)
     if not dry_run and not mock and config["revision"] == "main":
@@ -30,19 +32,29 @@ def run(config, split, conditions, output, generator=None, dry_run=False, smoke_
     if len(records)!=len(wanted): raise ValueError(f"Missing {len(wanted)-len(records)} split matches from processed input")
     settings={k:config[k] for k in ("max_new_tokens","do_sample","seed")}
     existing=list(read_jsonl(output)) if Path(output).exists() else []
+    if any(row.get("coverage_mode", "baseline") != coverage_mode for row in existing):
+        raise ValueError("Output contains another coverage mode; use a separate output file for each arm")
+    existing_by_key = {(row.get("split"), row.get("match_id"), row.get("condition")): row.get("run_id")
+                       for row in existing}
+    if len(existing_by_key) != len(existing):
+        raise ValueError("Output contains duplicate split/match/condition rows")
     completed={r["run_id"] for r in existing if r.get("status")=="complete"}
     new=[]
     for mid in ids:
         rec=records[mid]
         for condition in conditions:
-            messages=build_messages(rec,condition,config["affinity"])
+            messages=build_messages(rec,condition,config["affinity"],coverage_mode)
             prompt_hash=digest(messages)
             model_id = "mock" if mock else config["model_id"]
             revision = "synthetic" if mock else config["revision"]
             run_id=digest({"match_id":mid,"condition":condition,"model_id":model_id,"revision":revision,"prompt_hash":prompt_hash,"settings":settings})
+            old_run_id = existing_by_key.get((split, mid, condition))
+            if old_run_id is not None and old_run_id != run_id:
+                raise ValueError("Output contains another prompt or generation configuration; use a new output file")
             if run_id in completed: continue
             base={"run_id":run_id,"match_id":mid,"split":split,"team_a":rec["team_a"],"team_b":rec["team_b"],"condition":condition,
-                  "affinity":config["affinity"],"prompt_version":VERSION,"messages":messages,"prompt_hash":prompt_hash,"input_hash":input_hash(rec),
+                  "affinity":config["affinity"],"coverage_mode":coverage_mode,
+                  "prompt_version":VERSIONS[coverage_mode],"messages":messages,"prompt_hash":prompt_hash,"input_hash":input_hash(rec),
                   "model_id":model_id,"revision":revision,"mock":mock,"settings":settings,
                   "seed":settings["seed"],"split_manifest_sha256":sha256_file(manifest_path)}
             if dry_run:
@@ -50,7 +62,12 @@ def run(config, split, conditions, output, generator=None, dry_run=False, smoke_
             start=time.monotonic()
             try:
                 text=generator.generate(messages,settings)
-                row={**base,"status":"complete","output_text":text,"error":None,"elapsed_seconds":round(time.monotonic()-start,3)}
+                row={**base,"status":"complete","output_text":text,
+                     "output_word_count":len(text.split()),
+                     "output_token_count":getattr(generator,"last_generated_tokens",None),
+                     "hit_max_new_tokens":getattr(generator,"last_hit_max_new_tokens",None),
+                     "error":None,
+                     "elapsed_seconds":round(time.monotonic()-start,3)}
             except Exception as exc:
                 row={**base,"status":"error","output_text":None,"error":f"{type(exc).__name__}: {exc}","elapsed_seconds":round(time.monotonic()-start,3)}
             existing=[e for e in existing if e.get("run_id")!=run_id]
@@ -66,8 +83,8 @@ class MockGenerator:
     def generate(self,messages,settings): return "Mock output for pipeline testing only."
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--config",default="configs/baselines.json");p.add_argument("--split",required=True);p.add_argument("--conditions",default="neutral,fan_A,fan_B");p.add_argument("--output",required=True);p.add_argument("--dry-run",action="store_true");p.add_argument("--mock",action="store_true");p.add_argument("--smoke-test",type=int)
+    p=argparse.ArgumentParser();p.add_argument("--config",default="configs/baselines.json");p.add_argument("--split",required=True);p.add_argument("--conditions",default="neutral,fan_A,fan_B");p.add_argument("--output",required=True);p.add_argument("--dry-run",action="store_true");p.add_argument("--mock",action="store_true");p.add_argument("--smoke-test",type=int);p.add_argument("--coverage-mode",choices=COVERAGE_MODES,default="baseline")
     a=p.parse_args();config=json.loads(Path(a.config).read_text(encoding="utf-8"))
     generator=None if a.dry_run else MockGenerator() if a.mock else __import__("src.models.qwen",fromlist=["QwenGenerator"]).QwenGenerator(config["model_id"],config["revision"])
-    run(config,a.split,a.conditions.split(","),a.output,generator,a.dry_run,a.smoke_test)
+    run(config,a.split,a.conditions.split(","),a.output,generator,a.dry_run,a.smoke_test,a.coverage_mode)
 if __name__=="__main__":main()

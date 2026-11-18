@@ -49,6 +49,18 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(input_hash(r),input_hash(r))
         for c in ("neutral","fan_A","fan_B"):
             self.assertEqual(build_messages(r,c)[1]["content"].split("Verified match facts:\n")[1],facts)
+    def test_record_coverage_prompts_share_authoritative_input(self):
+        record = fixture(1)
+        record["statistics"] = {"shots": {"A": 10, "B": 8}}
+        concise = build_messages(record, "fan_A", coverage_mode="concise")
+        complete = build_messages(record, "fan_A", coverage_mode="complete")
+        self.assertEqual(concise[1], complete[1])
+        self.assertIn("final truth", concise[0]["content"])
+        self.assertIn("Never invent, infer, or contradict", concise[0]["content"])
+        self.assertIn("150 words", concise[0]["content"])
+        self.assertIn("every listed event", complete[0]["content"])
+        self.assertIn("every listed statistic", complete[0]["content"])
+        self.assertNotIn("every listed event", concise[0]["content"])
     def test_validate(self):
         r=fixture(1);self.assertEqual(reasons(r),[])
         r["score"]["A"]=0;self.assertIn("goal_count_exceeds_score",reasons(r))
@@ -96,6 +108,46 @@ Goal! Home 0, Away 1. Bob (Away) scores.
             self.assertTrue(all(r["status"]=="complete" for r in rows))
             self.assertEqual(run(cfg,"train",["neutral","fan_A","fan_B"],out,MockGenerator()),[])
             self.assertEqual(len(out.read_text().splitlines()),6)
+    def test_record_coverage_modes_have_distinct_runs_and_outputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            atomic_jsonl(root/"matches.jsonl", [fixture(1), fixture(2)])
+            create_split([fixture(1), fixture(2)], root/"splits", 2, 0, 0)
+            config = {"splits_dir": str(root/"splits"), "matches": str(root/"matches.jsonl"),
+                      "model_id": "mock", "revision": "synthetic", "affinity": "casual",
+                      "max_new_tokens": 250, "do_sample": False, "seed": 42}
+            concise_path, complete_path = root/"concise.jsonl", root/"complete.jsonl"
+            run(config, "train", ["fan_A"], concise_path, MockGenerator(), coverage_mode="concise")
+            run(config, "train", ["fan_A"], complete_path, MockGenerator(), coverage_mode="complete")
+            concise = [json.loads(line) for line in concise_path.read_text().splitlines()]
+            complete = [json.loads(line) for line in complete_path.read_text().splitlines()]
+            self.assertEqual(len(concise), len(complete))
+            self.assertEqual([r["input_hash"] for r in concise], [r["input_hash"] for r in complete])
+            self.assertNotEqual([r["run_id"] for r in concise], [r["run_id"] for r in complete])
+            self.assertEqual({r["prompt_version"] for r in complete}, {"record-complete-v1"})
+            self.assertEqual({r["settings"]["max_new_tokens"] for r in complete}, {250})
+            self.assertEqual({r["output_word_count"] for r in complete}, {6})
+            with self.assertRaisesRegex(ValueError, "another coverage mode"):
+                run(config, "train", ["fan_A"], concise_path, MockGenerator(), coverage_mode="complete")
+    def test_generation_records_token_cap_diagnostic(self):
+        class TokenGenerator:
+            def generate(self, messages, settings):
+                self.last_generated_tokens = settings["max_new_tokens"]
+                self.last_hit_max_new_tokens = True
+                return "One sentence."
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = fixture(1)
+            atomic_jsonl(root/"matches.jsonl", [record])
+            create_split([record], root/"splits", 1, 0, 0)
+            config = {"splits_dir": str(root/"splits"), "matches": str(root/"matches.jsonl"),
+                      "model_id": "test", "revision": "synthetic", "affinity": "casual",
+                      "max_new_tokens": 250, "do_sample": False, "seed": 42}
+            output = root/"out.jsonl"
+            run(config, "train", ["neutral"], output, TokenGenerator(), coverage_mode="complete")
+            row = json.loads(output.read_text().splitlines()[0])
+            self.assertEqual((row["output_word_count"], row["output_token_count"],
+                              row["hit_max_new_tokens"]), (2, 250, True))
     def test_evaluator(self):
         r=fixture(1)
         good=evaluate(r,"Home1 1-0 Away1. Alice scored.")

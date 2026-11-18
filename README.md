@@ -50,6 +50,10 @@ python3 -m src.audit_sheet --matches data/processed/matches.jsonl --generations 
 
 See `notes/hpc-setup.md` for cluster commands. `src/activations.py`, `src/steering.py`, and `src/probe.py` are future work markers, not completed studies.
 
+## Record coverage prompt experiment
+
+The `experiment/record-coverage` branch adds two BBC-record-grounded prompt modes, `concise` and `complete`, with a 150-word target and `max_new_tokens=250`. The modes share the exact same factual input and are saved to different JSONL files. `complete` asks for every available rendered fact; this is a prompt objective, not an automatically verified outcome. The SportsSum-style evaluator now prints separate precision, recall, and F1, but its event/name parser does not measure all score, time, or statistic fields. See `notes/record-coverage-experiment.md` for the design, limits, preflight commands, and cluster settings. The saved 200/50/49 split remains unchanged; test generation waits until dev settings are frozen.
+
 ## Version control and transfer
 
 This directory is a Git repository. It tracks code, configuration, notes, and the approved match-ID split. The BBC ZIP, parsed match records, archive samples, caches, and generated results are ignored. Use a **private remote** for ongoing code changes, then clone or pull on Insomnia. Transfer `data/processed/matches.jsonl` separately with `rsync`, because Git deliberately omits it; see `notes/hpc-setup.md`. A local `git init` alone does not create a remote that the cluster can pull from.
