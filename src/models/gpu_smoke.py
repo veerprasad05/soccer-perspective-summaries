@@ -14,5 +14,5 @@ def main():
     if a.load_model:
         from .qwen import QwenGenerator
         model=QwenGenerator(model_id,revision)
-        print(json.dumps({"loaded_model":a.model.config._name_or_path,"revision":model.revision}))
+        print(json.dumps({"loaded_model":model.model.config._name_or_path,"revision":model.revision}))
 if __name__=="__main__":main()
