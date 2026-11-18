@@ -58,6 +58,8 @@ The `experiment/record-coverage` branch adds two BBC-record-grounded prompt mode
 
 The `experiment/concise-steering` branch implements train-only Qwen activation extraction from the record-grounded concise fan A/B summaries and neutral-prompt residual steering with no-hook and norm-matched random controls. The full 200-pair training extraction and 850-output development steering run have completed; no-hook generation matched all 50 saved neutral baselines. The 49-match test fold is blocked from the extraction and steering CLIs. See `notes/concise-steering.md` for the method and Slurm commands, and `notes/concise-steering-results.md` for development findings and limits. Team-perspective judgments remain pending.
 
+`src.stance_judge` now supports blinded -3 to +3 supporter-perspective ratings, separate 0 to 3 emotion ratings, resumable OpenAI Responses calls, arm-level summaries, and a hidden-key human audit sheet. See `notes/stance-judge.md` for a four-match pilot and calibration workflow. No live judge calls or human ratings have been made in this workspace.
+
 ## Version control and transfer
 
 This directory is a Git repository. It tracks code, configuration, notes, and the approved match-ID split. The BBC ZIP, parsed match records, archive samples, caches, and generated results are ignored. Use a **private remote** for ongoing code changes, then clone or pull on Insomnia. Transfer `data/processed/matches.jsonl` separately with `rsync`, because Git deliberately omits it; see `notes/hpc-setup.md`. A local `git init` alone does not create a remote that the cluster can pull from.
