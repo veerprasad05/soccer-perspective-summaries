@@ -110,4 +110,19 @@ Goal! Home 0, Away 1. Bob (Away) scores.
         self.assertEqual(evaluate(r,"Away1 beat Home1.")["claims"][0]["status"],"contradicted")
         r["score"]={"A":None,"B":None}
         self.assertEqual(evaluate(r,"Home1 1-0 Away1.")["claims"][0]["status"],"unverifiable")
+    def test_evaluator_does_not_reverse_opponent_score_or_count_shots(self):
+        r=fixture(1)
+        r["score"]={"A":0,"B":1}
+        report=evaluate(r,"Away1 defeated Home1 1-0. Home1 had 14-12 shots on target.")
+        scores=[claim for claim in report["claims"] if claim["kind"]=="score"]
+        self.assertEqual(len(scores),1)
+        self.assertEqual(scores[0]["status"],"supported")
+    def test_evaluator_distinguishes_team_from_scorer_and_accepts_unique_surname(self):
+        r=fixture(1)
+        r["events"][0]["player"]="Alice Smith"
+        r["goal_events_complete"]=True
+        report=evaluate(r,"Home1 scored after Smith scored in the 45+2 minute.")
+        scorer=[claim for claim in report["claims"] if claim["kind"]=="scorer"]
+        self.assertEqual(len(scorer),1)
+        self.assertEqual(scorer[0]["status"],"supported")
 if __name__=="__main__":unittest.main()
