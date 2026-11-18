@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.sportssum import aggregate, evaluate, main, reference_sets, score_sets
+from src.sportssum import aggregate, evaluate, format_report, main, reference_sets, score_sets
 
 
 def fixture():
@@ -24,8 +24,22 @@ class SportsSumTests(unittest.TestCase):
     def test_paper_style_set_f1_deduplicates_and_defines_empty_case(self):
         result = score_sets(["alice", "alice", "bob"], ["alice", "carol"])
         self.assertEqual((result["tp"], result["fp"], result["fn"]), (1, 1, 1))
+        self.assertEqual((result["precision"], result["recall"]), (0.5, 0.5))
         self.assertEqual(result["f1"], 0.5)
         self.assertIsNone(score_sets([], [])["f1"])
+
+    def test_precision_recall_and_f1_are_reported_separately(self):
+        score = score_sets({"alice", "bob", "cara"}, {"alice", "outsider"})
+        self.assertEqual(score["precision"], 0.5)
+        self.assertAlmostEqual(score["recall"], 1 / 3)
+        self.assertAlmostEqual(score["f1"], 0.4)
+        record = fixture()
+        table = aggregate([{"match_id": "one", "condition": "neutral",
+                            **evaluate(record, "Smith scored.")}])
+        report = format_report(table)
+        self.assertIn("precision  recall  F1", report)
+        self.assertIn("salient EMS", report)
+        self.assertIn("complete_goal_logs", report)
 
     def test_reference_uses_subject_event_pairs(self):
         names, events = reference_sets(fixture())

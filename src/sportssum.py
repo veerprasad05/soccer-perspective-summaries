@@ -237,6 +237,19 @@ def score_counts(tp, fp, fn):
     return {"precision": precision, "recall": recall, "f1": f1}
 
 
+def format_report(table):
+    """Show each metric's precision, recall, and harmonic-mean F1 explicitly."""
+    lines = ["condition  subset               matches  metric          precision  recall  F1"]
+    for row in table:
+        for key, label in (("name", "NMS"), ("event", "EMS"),
+                           ("salient_event", "salient EMS")):
+            values = [row[f"{key}_{field}"] for field in ("precision", "recall", "f1")]
+            shown = ["NA" if value is None else f"{value:.3f}" for value in values]
+            lines.append(f"{row['condition']:<10} {row['subset']:<20} {row['n_matches']:>7}  "
+                         f"{label:<14} {shown[0]:>9}  {shown[1]:>6}  {shown[2]:>5}")
+    return "\n".join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--matches", default="data/processed/matches.jsonl")
@@ -280,6 +293,7 @@ def main():
         writer.writeheader()
         writer.writerows(table)
     print(f"Wrote {len(details)} SportsSum-style evaluations to {args.details} and {args.output}")
+    print(format_report(table))
 
 
 if __name__ == "__main__":
