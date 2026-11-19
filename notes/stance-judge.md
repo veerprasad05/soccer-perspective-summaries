@@ -78,6 +78,7 @@ holds. Compare that movement with the
 equal-norm random controls. Keep SportsSum and narrow rule scores beside these
 perspective ratings; the LLM stance judge does not certify factual accuracy.
 
-The first v1 API pilot completed on Insomnia. The v2 schema has fake-client
-tests and a real-data dry run but has **not** made a live request, so its API
-behavior and human agreement remain to be verified by the new pilot.
+The v1 and v2 API pilots completed on Insomnia. V2 has 20 valid structured
+ratings and a locally generated blinded human sheet, but human agreement has
+not been measured. See `notes/stance-judge-pilot-results.md` before expanding
+to all 850 development outputs.

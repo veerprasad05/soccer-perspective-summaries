@@ -27,3 +27,32 @@ to the two team names in that match; code maps the name to the signed -3 to
 not guarantee that the model identifies the correct favored team, so rerun
 the pilot with a separate `..._v2.jsonl` file and compare it with blinded
 human scores before judging the full 850 development outputs.
+
+## Revised v2 pilot
+
+The synced `results/stance_judge_pilot_luna_v2.jsonl` has 20 complete ratings
+for the same four dev matches and five arms. It made 16 API calls and reused
+four identical-input ratings. The returned model is `gpt-5.6-luna` throughout,
+all source-summary hashes match, and all signed scores are consistent with
+the returned exact favored team names. Six ratings set `uncertain=true`.
+
+| Arm | Mean stance | Mean paired change from no hook | Mean emotion |
+| --- | ---: | ---: | ---: |
+| No hook | -0.25 | 0.00 | 0.25 |
+| Learned +1 | -0.25 | 0.00 | 0.25 |
+| Learned -1 | -0.25 | 0.00 | 0.25 |
+| Random +1, seed 17 | +0.50 | +0.75 | 0.50 |
+| Random -1, seed 17 | +0.25 | +0.50 | 0.50 |
+
+The v2 judge no longer has the observed sign error. In this tiny pilot,
+learned steering did not change any judged stance relative to no hook, while
+random controls changed some. This is **not** evidence that the learned
+direction has no effect over 50 dev matches: the four sampled matches include
+three Team B wins and one Team A win, with no draw, and the judge has not
+been checked against human ratings. The remaining question is whether Luna's
+ratings distinguish partisan wording from objective match dominance.
+
+The ignored files `results/stance_judge_pilot_luna_v2.csv` and
+`results/stance_human_pilot_v2.csv` have been generated locally. The human
+sheet has 20 blank ratings and no steering-arm or LLM-score columns. Keep
+`results/stance_human_pilot_key_v2.csv` hidden until human ratings are filled.
