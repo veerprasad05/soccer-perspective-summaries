@@ -135,6 +135,17 @@ class SteeringTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "completed concise neutral"):
             validate_baselines([row], {"match-1"}, "manifest-1")
 
+    def test_open_neutral_baseline_requires_new_prompt_version(self):
+        row = {"match_id": "match-1", "condition": "neutral", "status": "complete",
+               "coverage_mode": "concise_open", "prompt_version": "record-concise-open-v1",
+               "split_manifest_sha256": "manifest-1", "mock": False}
+        self.assertEqual(set(validate_baselines([row], {"match-1"}, "manifest-1",
+                                                neutral_prompt_mode="concise_open")), {"match-1"})
+        wrong = dict(row, prompt_version="record-concise-v1")
+        with self.assertRaisesRegex(ValueError, "concise_open"):
+            validate_baselines([wrong], {"match-1"}, "manifest-1",
+                               neutral_prompt_mode="concise_open")
+
     def test_addition_changes_only_last_token_without_mutating_source(self):
         original = FakeHidden([[1, 2], [3, 4]])
         result = add_last_token((original, "cache"), FakeVector([10, -10]))

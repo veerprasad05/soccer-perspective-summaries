@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .data.common import atomic_jsonl, canonical_json, read_jsonl, sha256_file
 from .prompting.render import input_hash
-from .prompting.templates import build_messages
+from .prompting.templates import VERSIONS, build_messages
 
 
 def digest(value):
@@ -102,13 +102,17 @@ def random_direction(vector, seed, torch):
     return sample * (torch.linalg.vector_norm(vector) / torch.linalg.vector_norm(sample))
 
 
-def validate_baselines(rows, selected_ids, manifest_hash, revision=None, settings=None):
+def validate_baselines(rows, selected_ids, manifest_hash, revision=None, settings=None,
+                       neutral_prompt_mode="concise"):
     baselines = {}
     for row in rows:
         if row.get("match_id") not in selected_ids or row.get("condition") != "neutral":
             continue
-        if row.get("status") != "complete" or row.get("coverage_mode") != "concise" or row.get("mock"):
-            raise ValueError("Baseline must be a completed concise neutral generation")
+        if (row.get("status") != "complete" or
+                row.get("coverage_mode") != neutral_prompt_mode or
+                row.get("prompt_version") != VERSIONS[neutral_prompt_mode] or
+                row.get("mock")):
+            raise ValueError(f"Baseline must be a completed {neutral_prompt_mode} neutral generation")
         if row.get("split_manifest_sha256") != manifest_hash:
             raise ValueError("Baseline split manifest differs")
         if revision is not None and row.get("revision") != revision:
@@ -131,6 +135,8 @@ def run(args):
 
     if args.split not in ("train", "dev") or (args.split == "train") != (args.smoke_test is not None):
         raise ValueError("Use full dev or a train-only --smoke-test; test is reserved")
+    if args.neutral_prompt_mode not in ("concise", "concise_open"):
+        raise ValueError("Steering neutral prompt must be concise or concise_open")
     if not torch.cuda.is_available():
         raise RuntimeError("Steering requires an allocated CUDA GPU")
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
@@ -159,7 +165,7 @@ def run(args):
         raise ValueError("No selected matches")
     settings = {key: config[key] for key in ("max_new_tokens", "do_sample", "seed")}
     baselines = validate_baselines(read_jsonl(args.baselines), selected, manifest_hash,
-                                   config["revision"], settings)
+                                   config["revision"], settings, args.neutral_prompt_mode)
     records = {}
     for row in read_jsonl(config["matches"]):
         if row["match_id"] in selected:
@@ -171,12 +177,17 @@ def run(args):
     strengths = parse_strengths(args.strengths)
     seeds = parse_seeds(args.random_seeds)
     grid = experiment_grid(strengths, seeds)
-    experiment_id = digest({"split": args.split, "ids": ids,
-                            "vectors_sha256": metadata["vectors_sha256"],
-                            "layer": args.layer, "strengths": strengths,
-                            "random_seeds": seeds, "settings": settings,
-                            "model_id": config["model_id"], "revision": config["revision"],
-                            "manifest_sha256": manifest_hash})
+    baseline_hash = sha256_file(args.baselines)
+    experiment_config = {"split": args.split, "ids": ids,
+                         "vectors_sha256": metadata["vectors_sha256"],
+                         "layer": args.layer, "strengths": strengths,
+                         "random_seeds": seeds, "settings": settings,
+                         "model_id": config["model_id"], "revision": config["revision"],
+                         "manifest_sha256": manifest_hash}
+    if args.neutral_prompt_mode != "concise":
+        experiment_config.update({"neutral_prompt_mode": args.neutral_prompt_mode,
+                                  "baselines_sha256": baseline_hash})
+    experiment_id = digest(experiment_config)
     existing = list(read_jsonl(args.output)) if Path(args.output).exists() else []
     if any(row.get("experiment_id") != experiment_id for row in existing):
         raise ValueError("Output contains another steering grid or configuration; use a new file")
@@ -188,16 +199,20 @@ def run(args):
         raise ValueError("Selected layer exceeds model depth")
     for index, match_id in enumerate(ids, 1):
         record = records[match_id]
-        messages = build_messages(record, "neutral", config["affinity"], "concise")
+        messages = build_messages(record, "neutral", config["affinity"],
+                                  args.neutral_prompt_mode)
         prompt_hash = digest(messages)
         baseline = baselines[match_id]
         if baseline.get("prompt_hash") != prompt_hash or baseline.get("input_hash") != input_hash(record):
             raise ValueError(f"Neutral prompt or factual input differs for {match_id}")
         for control, alpha, seed in grid:
-            run_id = digest({"match_id": match_id, "control": control, "alpha": alpha,
-                             "random_seed": seed, "layer": args.layer,
-                             "vectors_sha256": metadata["vectors_sha256"],
-                             "prompt_hash": prompt_hash, "settings": settings})
+            run_config = {"match_id": match_id, "control": control, "alpha": alpha,
+                          "random_seed": seed, "layer": args.layer,
+                          "vectors_sha256": metadata["vectors_sha256"],
+                          "prompt_hash": prompt_hash, "settings": settings}
+            if args.neutral_prompt_mode != "concise":
+                run_config["baselines_sha256"] = baseline_hash
+            run_id = digest(run_config)
             if run_id in completed:
                 continue
             if control == "none":
@@ -211,9 +226,12 @@ def run(args):
                 raise RuntimeError(f"Zero-hook generation differs from neutral baseline for {match_id}")
             row = {"run_id": run_id, "experiment_id": experiment_id,
                    "match_id": match_id, "split": args.split,
-                   "condition": "neutral", "coverage_mode": "concise",
+                   "condition": "neutral", "coverage_mode": args.neutral_prompt_mode,
                    "evaluation_condition": arm_label(control, alpha, seed),
-                   "prompt_version": "record-concise-v1", "prompt_hash": prompt_hash,
+                   "prompt_version": VERSIONS[args.neutral_prompt_mode],
+                   "neutral_prompt_mode": args.neutral_prompt_mode,
+                   "baselines_sha256": baseline_hash,
+                   "prompt_hash": prompt_hash,
                    "messages": messages,
                    "input_hash": input_hash(record), "split_manifest_sha256": manifest_hash,
                    "model_id": config["model_id"], "revision": config["revision"],
@@ -244,6 +262,8 @@ def main():
     parser.add_argument("--vectors", required=True)
     parser.add_argument("--metadata", required=True)
     parser.add_argument("--baselines", required=True)
+    parser.add_argument("--neutral-prompt-mode", choices=("concise", "concise_open"),
+                        default="concise")
     parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--strengths", required=True,
                         help="Comma-separated positive magnitudes; both signs are tested")

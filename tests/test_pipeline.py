@@ -61,6 +61,18 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("every listed event", complete[0]["content"])
         self.assertIn("every listed statistic", complete[0]["content"])
         self.assertNotIn("every listed event", concise[0]["content"])
+    def test_open_neutral_prompt_keeps_bbc_facts_and_old_prompt(self):
+        record = fixture(1)
+        original = build_messages(record, "neutral", "casual", "concise")
+        opened = build_messages(record, "neutral", "casual", "concise_open")
+        self.assertEqual(opened[0], original[0])
+        self.assertEqual(opened[1]["content"],
+                         "Write a summary for the match.\n\nVerified match facts:\n" +
+                         render_match_facts(record))
+        self.assertIn("Write a balanced summary", original[1]["content"])
+        self.assertNotIn("restrained", opened[1]["content"])
+        with self.assertRaisesRegex(ValueError, "reserved for neutral"):
+            build_messages(record, "fan_A", "casual", "concise_open")
     def test_validate(self):
         r=fixture(1);self.assertEqual(reasons(r),[])
         r["score"]["A"]=0;self.assertIn("goal_count_exceeds_score",reasons(r))

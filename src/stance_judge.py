@@ -18,6 +18,7 @@ from pathlib import Path
 
 from .data.common import atomic_jsonl, canonical_json, read_jsonl
 from .prompting.render import render_match_facts
+from .prompting.templates import VERSIONS
 
 RUBRIC_VERSION = "bbc-supporter-stance-v2"
 RUBRIC = """You are a blinded evaluator of a soccer match summary. Rate the SUMMARY's
@@ -89,9 +90,10 @@ def load_dev(generations, matches, dev_ids_path):
         key = (row.get("match_id"), arm)
         if (row.get("split") != "dev" or row.get("match_id") not in ids or
                 row.get("status") != "complete" or row.get("condition") != "neutral" or
-                row.get("coverage_mode") != "concise" or not arm or
+                row.get("coverage_mode") not in ("concise", "concise_open") or
+                row.get("prompt_version") != VERSIONS[row["coverage_mode"]] or not arm or
                 not row.get("output_text", "").strip() or not row.get("run_id")):
-            raise ValueError("Judge input must contain completed concise neutral dev steering rows")
+            raise ValueError("Judge input must contain completed record-grounded neutral dev steering rows")
         if key in seen:
             raise ValueError(f"Duplicate match/arm: {key}")
         seen.add(key)
@@ -105,6 +107,8 @@ def load_dev(generations, matches, dev_ids_path):
         raise ValueError("No-hook control is required")
     if len({row.get("split_manifest_sha256") for row in rows}) != 1:
         raise ValueError("Mixed split manifests in judge input")
+    if len({row["coverage_mode"] for row in rows}) != 1:
+        raise ValueError("Mixed neutral prompt modes in judge input")
     return records, rows
 
 

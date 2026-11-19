@@ -2,15 +2,18 @@ from .render import render_match_facts
 CONDITIONS = ("neutral", "fan_A", "fan_B")
 AFFINITIES = ("casual", "passionate")
 VERSION = "baseline-v1"
-COVERAGE_MODES = ("baseline", "concise", "complete")
+COVERAGE_MODES = ("baseline", "concise", "complete", "concise_open")
 VERSIONS = {"baseline": VERSION, "concise": "record-concise-v1",
-            "complete": "record-complete-v1"}
+            "complete": "record-complete-v1",
+            "concise_open": "record-concise-open-v1"}
 
 
 def build_messages(record, condition, affinity="casual", coverage_mode="baseline"):
     if condition not in CONDITIONS: raise ValueError(f"Invalid condition {condition}")
     if affinity not in AFFINITIES: raise ValueError(f"Invalid affinity {affinity}")
     if coverage_mode not in COVERAGE_MODES: raise ValueError(f"Invalid coverage mode {coverage_mode}")
+    if coverage_mode == "concise_open" and condition != "neutral":
+        raise ValueError("concise_open is reserved for neutral generation")
     audience = {"neutral":"Write a balanced summary for a general reader.",
                 "fan_A":f"Write for supporters of {record['team_a']} (Team A).",
                 "fan_B":f"Write for supporters of {record['team_b']} (Team B)."}[condition]
@@ -28,5 +31,7 @@ def build_messages(record, condition, affinity="casual", coverage_mode="baseline
                        "recorded minute, type, team, player, replacement, own-goal status, and "
                        "score-after when present, and every listed statistic for both teams. "
                        "Use compact clauses if needed; full coverage takes priority over the word target.")
-    user = audience + " " + energy + "\n\nVerified match facts:\n" + render_match_facts(record)
+    user_prefix = ("Write a summary for the match." if coverage_mode == "concise_open"
+                   else audience + " " + energy)
+    user = user_prefix + "\n\nVerified match facts:\n" + render_match_facts(record)
     return [{"role":"system","content":system},{"role":"user","content":user}]

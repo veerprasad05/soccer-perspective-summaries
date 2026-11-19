@@ -54,5 +54,9 @@ ratings distinguish partisan wording from objective match dominance.
 
 The ignored files `results/stance_judge_pilot_luna_v2.csv` and
 `results/stance_human_pilot_v2.csv` have been generated locally. The human
-sheet has 20 blank ratings and no steering-arm or LLM-score columns. Keep
-`results/stance_human_pilot_key_v2.csv` hidden until human ratings are filled.
+sheet has no steering-arm or LLM-score columns. Nineteen of its 20 stance
+ratings are complete; `stance-audit-019` remains blank. Exact human/Luna
+agreement is 11/19, sign-or-neutral agreement 12/19, and Luna identifies
+the same side in only 3/8 human nonneutral cases. An always-neutral scorer
+would also have 11/19 exact agreement on this sample. Emotion ratings are
+blank. Keep `results/stance_human_pilot_key_v2.csv` hidden from raters.

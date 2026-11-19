@@ -14,6 +14,7 @@ from src import stance_judge
 def generation(match_id, arm, text):
     return {"run_id": match_id + ":" + arm, "match_id": match_id,
             "split": "dev", "condition": "neutral", "coverage_mode": "concise",
+            "prompt_version": "record-concise-v1",
             "status": "complete", "evaluation_condition": arm,
             "output_text": text, "split_manifest_sha256": "manifest"}
 
@@ -132,6 +133,14 @@ class StanceJudgeTests(unittest.TestCase):
             (root / "generations.jsonl").write_text("\n".join(map(json.dumps, rows)) + "\n")
             with self.assertRaisesRegex(ValueError, "dev steering rows"):
                 stance_judge.load_dev(root / "generations.jsonl", root / "matches.jsonl", root / "dev.json")
+            rows[0]["split"] = "dev"
+            for row in rows:
+                row["coverage_mode"] = "concise_open"
+                row["prompt_version"] = "record-concise-open-v1"
+            (root / "generations.jsonl").write_text("\n".join(map(json.dumps, rows)) + "\n")
+            _, loaded = stance_judge.load_dev(root / "generations.jsonl",
+                                              root / "matches.jsonl", root / "dev.json")
+            self.assertEqual(len(loaded), 50)
 
 
 if __name__ == "__main__":
