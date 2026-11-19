@@ -56,9 +56,9 @@ The `experiment/record-coverage` branch adds two BBC-record-grounded prompt mode
 
 ## Concise activation and steering experiment
 
-The `experiment/concise-steering` branch implements train-only Qwen activation extraction from the record-grounded concise fan A/B summaries and neutral-prompt residual steering with no-hook and norm-matched random controls. The full 200-pair training extraction and 850-output development steering run have completed; no-hook generation matched all 50 saved neutral baselines. The 49-match test fold is blocked from the extraction and steering CLIs. See `notes/concise-steering.md` for the method and Slurm commands, and `notes/concise-steering-results.md` for development findings and limits. Team-perspective judgments remain pending.
+The `experiment/concise-steering` branch implements train-only Qwen activation extraction from the record-grounded concise fan A/B summaries and neutral-prompt residual steering with no-hook and norm-matched random controls. The full 200-pair training extraction and 850-output development steering run have completed; no-hook generation matched all 50 saved neutral baselines. The 49-match test fold is blocked from the extraction and steering CLIs. See `notes/concise-steering.md` for the method and Slurm commands, and `notes/concise-steering-results.md` for development findings and limits. Validated team-perspective judgments remain pending.
 
-`src.stance_judge` now supports blinded -3 to +3 supporter-perspective ratings, separate 0 to 3 emotion ratings, resumable OpenAI Responses calls, arm-level summaries, and a hidden-key human audit sheet. See `notes/stance-judge.md` for a four-match pilot and calibration workflow. No live judge calls or human ratings have been made in this workspace.
+`src.stance_judge` supports blinded -3 to +3 supporter-perspective ratings, separate 0 to 3 emotion ratings, resumable OpenAI Responses calls, arm-level summaries, and a hidden-key human audit sheet. The first four-match Luna pilot exposed a score-polarity error; the revised rubric takes the favored team's exact name and derives the signed score in code. See `notes/stance-judge.md` and `notes/stance-judge-pilot-results.md`. The revised rubric and human agreement remain to be checked.
 
 ## Version control and transfer
 

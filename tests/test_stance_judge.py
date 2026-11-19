@@ -19,10 +19,11 @@ def generation(match_id, arm, text):
 
 
 def response(stance=0):
+    team = "City" if stance < 0 else "United" if stance > 0 else "neither"
     return {"id": "resp-1", "model": "gpt-5.6-luna", "status": "completed",
             "usage": {"input_tokens": 100, "output_tokens": 20},
             "output": [{"type": "message", "content": [{"type": "output_text",
-                        "text": json.dumps({"stance": stance, "emotion": 1,
+                        "text": json.dumps({"favored_team": team, "strength": abs(stance), "emotion": 1,
                                             "uncertain": False, "rationale": "Plain wording."})}]}]}
 
 
@@ -48,14 +49,27 @@ class StanceJudgeTests(unittest.TestCase):
         self.assertIn("City won 1-0.", body["input"])
         self.assertNotIn("learned_alpha", body["input"])
         self.assertNotIn("alpha", body["instructions"])
+        self.assertIn("Team A = City", body["input"])
+        self.assertEqual(body["text"]["format"]["schema"]["properties"]["favored_team"]["enum"],
+                         ["City", "United", "neither"])
         self.assertFalse(body["store"])
-        self.assertEqual(stance_judge.parse_response(response(-2))["stance"], -2)
+        self.assertEqual(stance_judge.parse_response(response(-2), record)["stance"], -2)
+        madrid = {"team_a": "Real Madrid", "team_b": "Granada CF"}
+        self.assertEqual(stance_judge.normalize_rating({
+            "favored_team": "Real Madrid", "strength": 1, "emotion": 1,
+            "uncertain": False, "rationale": "The summary favors Real Madrid."}, madrid)["stance"], -1)
         with self.assertRaisesRegex(ValueError, "violates"):
-            stance_judge.parse_response(response(4))
+            stance_judge.parse_response(response(4), record)
+        inconsistent = response()
+        inconsistent["output"][0]["content"][0]["text"] = json.dumps({
+            "favored_team": "City", "strength": 0, "emotion": 1,
+            "uncertain": False, "rationale": "Wrong strength."})
+        with self.assertRaisesRegex(ValueError, "violates"):
+            stance_judge.parse_response(inconsistent, record)
         refused = response()
         refused["output"][0]["content"] = [{"type": "refusal", "refusal": "No"}]
         with self.assertRaisesRegex(ValueError, "refused"):
-            stance_judge.parse_response(refused)
+            stance_judge.parse_response(refused, record)
 
     def test_selection_balances_arms_and_requires_no_hook(self):
         rows = [generation(mid, arm, "text") for mid in ("one", "two", "three")

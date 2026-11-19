@@ -5,13 +5,15 @@ completed 850-row concise steering JSONL and sends one BBC record and one
 candidate summary per request to the OpenAI Responses API. The request omits
 the run ID, steering method, coefficient, random seed, and generation prompt.
 The output preserves those labels for paired analysis after scoring. The
-`bbc-supporter-stance-v1` rubric scores allegiance from -3 (strong Team A) to
-+3 (strong Team B), with 0 for neutral or ambiguous summaries, and emotional
-intensity separately from 0 to 3. It explicitly says that winning, losing,
+`bbc-supporter-stance-v2` rubric selects the favored team by exact name and a
+0-3 strength; code maps this to -3 (strong Team A) through +3 (strong Team B).
+Emotion is scored separately from 0 to 3. It explicitly says that winning, losing,
 scorelines, and fact counts alone are not evidence of allegiance. Factuality
 remains a separate evaluation.
 
-`gpt-5.6-luna` is the default because it is an independent, low-cost judge.
+The first v1 pilot exposed incorrect numerical sign mapping; see
+`notes/stance-judge-pilot-results.md`. Use new v2 output paths. `gpt-5.6-luna`
+is the default because it is an independent, low-cost judge.
 OpenAI describes Luna as a cost-sensitive model, not its strongest frontier
 tier. Keep `--model` configurable and choose a judge after comparing a fixed
 pilot against blinded human ratings. The official model page currently lists
@@ -26,7 +28,7 @@ key. The API receives BBC facts and summary text. A dry run validates the
 source and prints only the planned request counts:
 
 ```bash
-python3 -m src.stance_judge run --output results/stance_judge_pilot_luna.jsonl --pilot-matches 4 --arms none_alpha_0,learned_alpha_-1,learned_alpha_+1,random_alpha_-1_seed_17,random_alpha_+1_seed_17 --dry-run
+python3 -m src.stance_judge run --output results/stance_judge_pilot_luna_v2.jsonl --pilot-matches 4 --arms none_alpha_0,learned_alpha_-1,learned_alpha_+1,random_alpha_-1_seed_17,random_alpha_+1_seed_17 --dry-run
 ```
 
 Once the key is available, omit `--dry-run` to rate the same **20** summaries.
@@ -38,8 +40,8 @@ command resumes incomplete work. Use a new output path for a different model,
 rubric, or source text, and keep pilot and full ratings separate for clarity.
 
 ```bash
-python3 -m src.stance_judge run --output results/stance_judge_pilot_luna.jsonl --pilot-matches 4 --arms none_alpha_0,learned_alpha_-1,learned_alpha_+1,random_alpha_-1_seed_17,random_alpha_+1_seed_17
-python3 -m src.stance_judge report --judgments results/stance_judge_pilot_luna.jsonl --output results/stance_judge_pilot_luna.csv
+python3 -m src.stance_judge run --output results/stance_judge_pilot_luna_v2.jsonl --pilot-matches 4 --arms none_alpha_0,learned_alpha_-1,learned_alpha_+1,random_alpha_-1_seed_17,random_alpha_+1_seed_17
+python3 -m src.stance_judge report --judgments results/stance_judge_pilot_luna_v2.jsonl --output results/stance_judge_pilot_luna_v2.csv
 ```
 
 Make a **blinded** human calibration sheet from that pilot. Fill the blank
@@ -49,8 +51,8 @@ the selected matches allow it. One human rater can audit the judge, but does
 not provide inter-rater reliability. Two independent raters are preferable.
 
 ```bash
-python3 -m src.stance_judge audit --judgments results/stance_judge_pilot_luna.jsonl --matches-count 4 --output results/stance_human_pilot.csv --key results/stance_human_pilot_key.csv
-python3 -m src.stance_judge compare-human --sheet results/stance_human_pilot.csv --key results/stance_human_pilot_key.csv
+python3 -m src.stance_judge audit --judgments results/stance_judge_pilot_luna_v2.jsonl --matches-count 4 --output results/stance_human_pilot_v2.csv --key results/stance_human_pilot_key_v2.csv
+python3 -m src.stance_judge compare-human --sheet results/stance_human_pilot_v2.csv --key results/stance_human_pilot_key_v2.csv
 ```
 
 The comparison prints exact agreement, agreement within one scale point,
@@ -64,8 +66,8 @@ on development data before any final test evaluation.
 After calibration, rate all dev arms:
 
 ```bash
-python3 -m src.stance_judge run --output results/stance_judge_dev_l20_luna.jsonl --model gpt-5.6-luna
-python3 -m src.stance_judge report --judgments results/stance_judge_dev_l20_luna.jsonl --output results/stance_judge_dev_l20_luna.csv
+python3 -m src.stance_judge run --output results/stance_judge_dev_l20_luna_v2.jsonl --model gpt-5.6-luna
+python3 -m src.stance_judge report --judgments results/stance_judge_dev_l20_luna_v2.jsonl --output results/stance_judge_dev_l20_luna_v2.csv
 ```
 
 The report gives mean stance, paired mean change from the same match's
@@ -76,6 +78,6 @@ holds. Compare that movement with the
 equal-norm random controls. Keep SportsSum and narrow rule scores beside these
 perspective ratings; the LLM stance judge does not certify factual accuracy.
 
-The API integration has local fake-client tests and a real-data dry run. It
-has **not** made a live request in this workspace, so API access, returned
-schema behavior, and human agreement remain to be verified by the pilot.
+The first v1 API pilot completed on Insomnia. The v2 schema has fake-client
+tests and a real-data dry run but has **not** made a live request, so its API
+behavior and human agreement remain to be verified by the new pilot.
