@@ -53,6 +53,11 @@ class StanceJudgeTests(unittest.TestCase):
         self.assertIn("Team A = City", body["input"])
         self.assertEqual(body["text"]["format"]["schema"]["properties"]["favored_team"]["enum"],
                          ["City", "United", "neither"])
+        self.assertIn("whole numbers", body["instructions"])
+        self.assertIn("Never use decimals or fractions", body["instructions"])
+        for field in ("strength", "emotion"):
+            self.assertEqual(body["text"]["format"]["schema"]["properties"][field],
+                             {"type": "integer", "enum": [0, 1, 2, 3]})
         self.assertFalse(body["store"])
         self.assertEqual(stance_judge.parse_response(response(-2), record)["stance"], -2)
         madrid = {"team_a": "Real Madrid", "team_b": "Granada CF"}
@@ -61,6 +66,13 @@ class StanceJudgeTests(unittest.TestCase):
             "uncertain": False, "rationale": "The summary favors Real Madrid."}, madrid)["stance"], -1)
         with self.assertRaisesRegex(ValueError, "violates"):
             stance_judge.parse_response(response(4), record)
+        for field in ("strength", "emotion"):
+            fractional = response(-2)
+            rating = json.loads(fractional["output"][0]["content"][0]["text"])
+            rating[field] = 1.5
+            fractional["output"][0]["content"][0]["text"] = json.dumps(rating)
+            with self.assertRaisesRegex(ValueError, "violates"):
+                stance_judge.parse_response(fractional, record)
         inconsistent = response()
         inconsistent["output"][0]["content"][0]["text"] = json.dumps({
             "favored_team": "City", "strength": 0, "emotion": 1,
